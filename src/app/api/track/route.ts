@@ -1,40 +1,33 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { NextResponse } from "next/server";
+import { sanityFetch } from "@/lib/sanity";
 
-function norm(p?: string){ return (p||"").replace(/\D+/g,""); }
-function safe(o:any){
-  if (!o) return null;
-  const { key, ...rest } = o;
-  return {
-    id: rest.id,
-    contact: { name: rest.name, phone: rest.phone, address: rest.address, city: rest.city, payment: rest.payment, note: rest.contactNote },
-    lines: rest.lines.map((l:any)=>({ slug:l.slug, qty:l.qty, priceNPR:l.priceNPR })),
-    totalNPR: rest.totalNPR,
-    createdAt: rest.createdAt,
-    status: rest.status,
-  };
+// GET /api/track?id=RP-XXXX
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id") || searchParams.get("orderId");
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
+  const groq = `*[_type=="order" && orderId==$id][0]{
+    orderId, status, total, phone, customerName, createdAt,
+    items[]{ _key, name, qty, priceNPR }
+  }`;
+
+  const order = await sanityFetch<any>(groq, { id });
+  if (!order) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  return NextResponse.json({ ok: true, order });
 }
 
-export async function GET(req: NextRequest){
-  const url = new URL(req.url);
-  const id = url.searchParams.get("id") || "";
-  const k  = url.searchParams.get("k")  || "";
-  if (!id || !k) return NextResponse.json({ ok:false, error:"Missing id or key" }, { status: 400 });
-  const o = await prisma.order.findUnique({ where: { id } , include: { lines:true }});
-  if (!o) return NextResponse.json({ ok:false, error:"Not found" }, { status: 404 });
-  if (o.key !== k) return NextResponse.json({ ok:false, error:"Unauthorized" }, { status: 401 });
-  return NextResponse.json({ ok:true, order: safe(o) });
-}
-
-export async function POST(req: NextRequest){
-  try{
-    const { id, phone } = await req.json();
-    if (!id || !phone) return NextResponse.json({ ok:false, error:"Missing id or phone" }, { status: 400 });
-    const o = await prisma.order.findUnique({ where: { id }, include: { lines:true }});
-    if (!o) return NextResponse.json({ ok:false, error:"Not found" }, { status: 404 });
-    if (norm(o.phone) !== norm(phone)) return NextResponse.json({ ok:false, error:"Phone does not match" }, { status: 401 });
-    return NextResponse.json({ ok:true, order: safe(o) });
-  }catch(e:any){
-    return NextResponse.json({ ok:false, error: e?.message || "Invalid request" }, { status: 400 });
-  }
+// POST /api/track  body: { id: "RP-XXXX" }
+export async function POST(req: Request) {
+  let body: any = {};
+  try { body = await req.json(); } catch {}
+  const id = body?.id || body?.orderId;
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  const groq = `*[_type=="order" && orderId==$id][0]{
+    orderId, status, total, phone, customerName, createdAt,
+    items[]{ _key, name, qty, priceNPR }
+  }`;
+  const order = await sanityFetch<any>(groq, { id });
+  if (!order) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  return NextResponse.json({ ok: true, order });
 }
