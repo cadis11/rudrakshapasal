@@ -41,7 +41,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
     <main className="mx-auto max-w-6xl px-6 py-8">
       <h1 className="text-2xl font-bold mb-4">Owner Panel — Orders</h1>
 
-      <form className="mb-4 grid gap-3 sm:grid-cols-3" action="/owner-panel/orders" method="GET">
+      <form className="mb-4 grid gap-3 sm:grid-cols-3" action="/owner-panel/owner-panel/owner-panel/orders" method="GET">
         <input name="q" defaultValue={sp.q || ""} placeholder="Search orderId, name, phone" className="rounded-lg bg-neutral-900 border border-white/15 px-3 py-2" />
         <select name="status" defaultValue={sp.status || ""} className="rounded-lg bg-neutral-900 border border-white/15 px-3 py-2">
           <option value="">All Fulfillment</option>
@@ -79,7 +79,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ q
             {items.map((o)=>(
               <tr key={o.orderId} className="align-top">
                 <td className="p-2">
-                  <div className="font-medium"><Link className="underline" href={`/owner-panel/orders/${o.orderId}`}>{o.orderId}</Link></div>
+                  <div className="font-medium"><Link className="underline" href={`/owner-panel/owner-panel/owner-panel/orders/${o.orderId}`}>{o.orderId}</Link></div>
                   <div className="text-neutral-400">{new Date(o.createdAt).toLocaleString()}</div>
                 </td>
                 <td className="p-2">
