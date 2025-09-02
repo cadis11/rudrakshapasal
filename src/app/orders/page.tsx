@@ -1,5 +1,9 @@
-import { redirect } from 'next/navigation';
-export default function Page(){
-  const base = process.env.ADMIN_PANEL_BASEPATH || '/owner-panel';
-  redirect(base + '/orders');
+import { permanentRedirect } from "next/navigation";
+
+// prevent prerender so the redirect happens at request time
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default function Page() {
+  permanentRedirect("/owner-panel/orders");
 }
