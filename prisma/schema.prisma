@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // Change to "postgresql" when you move to Postgres
+  url      = env("DATABASE_URL")
+}
+
+model Order {
+  id          String  @id                   // UUID string
+  key         String                        // per-order secret for tracking link
+  name        String?
+  phone       String?
+  address     String?
+  city        String?
+  payment     String?
+  contactNote String?                       // customer's note
+  adminNote   String?                       // private admin note
+  totalNPR    Int
+  status      String  @default("Pending")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lines       OrderLine[]
+  history     StatusHistory[]
+}
+
+model OrderLine {
+  id       String @id @default(cuid())
+  orderId  String
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  slug     String
+  qty      Int
+  priceNPR Int
+}
+
+model StatusHistory {
+  id      String   @id @default(cuid())
+  orderId String
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status  String
+  at      DateTime
+}

@@ -1,0 +1,1 @@
+Drop esewa.png and fonepay.png here (or change ESEWA_QR_URL / FONEPAY_QR_URL in .env.local).
