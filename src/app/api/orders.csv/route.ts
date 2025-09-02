@@ -1,29 +1,40 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { sanityFetch } from "@/lib/sanity";
 
-function q(v: unknown){ const s = (v ?? "").toString().replace(/"/g,'""'); return `"${s}"`; }
+function toCsvValue(v: unknown) {
+  if (v === null || v === undefined) return "";
+  const s = String(v);
+  return /[",\r\n]/.test(s) ? `"${s.replaceAll('"','""')}"` : s;
+}
 
-export async function GET(req: Request){
-  const url = new URL(req.url);
-  const from = url.searchParams.get("from");
-  const to   = url.searchParams.get("to");
-  const where:any = {};
-  if (from || to) where.createdAt = {};
-  if (from) where.createdAt.gte = new Date(from as string);
-  if (to)   { const d = new Date(to as string); d.setHours(23,59,59,999); where.createdAt.lte = d; }
+export async function GET() {
+  const groq = `*[_type=="order"]|order(createdAt desc){
+    orderId, status, total, phone, customerName, createdAt,
+    items[]{ _key, name, qty, priceNPR }
+  }`;
+  const rows = await sanityFetch<any[]>(groq);
 
-  const rows = await prisma.order.findMany({ where, include: { lines: true }, orderBy: { createdAt: "desc" } });
-  const header = ["id","createdAt","status","name","phone","address","city","payment","totalNPR","lines"];
-  const lines = rows.map(r=>{
-    const items = r.lines.map(l=> `${l.slug} x${l.qty} @ NPR ${l.priceNPR}`).join("; ");
-    return [q(r.id), q(r.createdAt.toISOString()), q(r.status), q(r.name), q(r.phone), q(r.address), q(r.city), q(r.payment), q(r.totalNPR), q(items)].join(",");
-  });
-  const csv = [header.join(","), ...lines].join("\r\n");
-  return new NextResponse(csv, {
-    status: 200,
+  const header = ["orderId","status","total","phone","customerName","createdAt","itemsCount"];
+  const lines = [header.join(",")];
+
+  for (const o of rows ?? []) {
+    const line = [
+      toCsvValue(o.orderId),
+      toCsvValue(o.status),
+      toCsvValue(o.total),
+      toCsvValue(o.phone),
+      toCsvValue(o.customerName),
+      toCsvValue(o.createdAt),
+      toCsvValue(Array.isArray(o.items) ? o.items.length : 0),
+    ].join(",");
+    lines.push(line);
+  }
+
+  const csv = lines.join("\r\n") + "\r\n";
+  return new Response(csv, {
     headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": "attachment; filename=orders.csv"
-    }
+      "content-type": "text/csv; charset=utf-8",
+      "content-disposition": "attachment; filename=\"orders.csv\"",
+      "cache-control": "no-store",
+    },
   });
 }
