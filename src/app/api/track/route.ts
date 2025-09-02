@@ -23,10 +23,12 @@ export async function POST(req: Request) {
   try { body = await req.json(); } catch {}
   const id = body?.id || body?.orderId;
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
   const groq = `*[_type=="order" && orderId==$id][0]{
     orderId, status, total, phone, customerName, createdAt,
     items[]{ _key, name, qty, priceNPR }
   }`;
+
   const order = await sanityFetch<any>(groq, { id });
   if (!order) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ ok: true, order });

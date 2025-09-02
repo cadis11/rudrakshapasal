@@ -1,11 +1,10 @@
-import { PrismaClient } from "@prisma/client";
+/**
+ * Prisma removed. This placeholder prevents build-time imports from failing.
+ * If you need DB in future, wire Sanity or another service here.
+ */
+export type EmptyDB = Record<string, never>;
+export const db: EmptyDB = Object.freeze({});
 
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
-
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["query","error","warn"] : ["error"],
-  });
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+export function notUsed() {
+  return null as unknown as never;
+}
