@@ -1,0 +1,7 @@
+{
+  "buildCommand": "npm run build",
+  "installCommand": "npm ci",
+  "framework": "nextjs",
+  "functions": { "maxDuration": 60 },
+  "env": { "NEXT_TELEMETRY_DISABLED": "1" }
+}
